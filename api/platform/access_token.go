@@ -9,7 +9,7 @@ import (
 
 	http "github.com/bogdanfinn/fhttp"
 
-	"github.com/linweiyuan/go-chatgpt-api/api"
+	"github.com/dhso/go-chatgpt-api/api"
 )
 
 func (userLogin *UserLogin) GetAuthorizedUrl(csrfToken string) (string, int, error) {

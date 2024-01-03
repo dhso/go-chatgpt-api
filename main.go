@@ -8,12 +8,13 @@ import (
 	http "github.com/bogdanfinn/fhttp"
 	"github.com/gin-gonic/gin"
 
-	"github.com/linweiyuan/go-chatgpt-api/api"
-	"github.com/linweiyuan/go-chatgpt-api/api/chatgpt"
-	"github.com/linweiyuan/go-chatgpt-api/api/imitate"
-	"github.com/linweiyuan/go-chatgpt-api/api/platform"
-	_ "github.com/linweiyuan/go-chatgpt-api/env"
-	"github.com/linweiyuan/go-chatgpt-api/middleware"
+	"github.com/dhso/go-chatgpt-api/api"
+	"github.com/dhso/go-chatgpt-api/api/chatgpt"
+	"github.com/dhso/go-chatgpt-api/api/imitate"
+	"github.com/dhso/go-chatgpt-api/api/patgpt"
+	"github.com/dhso/go-chatgpt-api/api/platform"
+	_ "github.com/dhso/go-chatgpt-api/env"
+	"github.com/dhso/go-chatgpt-api/middleware"
 )
 
 func init() {
@@ -31,6 +32,7 @@ func main() {
 	setupPlatformAPIs(router)
 	setupPandoraAPIs(router)
 	setupImitateAPIs(router)
+	setupPatgptAPIs(router)
 	router.NoRoute(api.Proxy)
 
 	router.GET("/", func(c *gin.Context) {
@@ -89,6 +91,17 @@ func setupImitateAPIs(router *gin.Engine) {
 		apiGroup := imitateGroup.Group("/v1")
 		{
 			apiGroup.POST("/chat/completions", imitate.CreateChatCompletions)
+		}
+	}
+}
+
+func setupPatgptAPIs(router *gin.Engine) {
+	patgptGroup := router.Group("/patgpt")
+	{
+		apiGroup := patgptGroup.Group("/v1")
+		{
+			apiGroup.POST("/chat/completions", patgpt.CreateChatCompletions)
+			apiGroup.POST("/completions", patgpt.CreateCompletions)
 		}
 	}
 }

@@ -22,7 +22,7 @@
 - https://platform.openai.com/playground 登录返回 `apiKey`
 - `apiKey` 余额查询
 - 等等 ...
-- 支持 `ChatGPT` 转 `API`，接口 `/imitate/v1/chat/completions`，利用 `accessToken` 模拟 `apiKey`，实现伪免费使用 `API`，从而支持集成仅支持 `apiKey` 调用的第三方客户端项目，分享一个好用的脚本测试 `web-to-api` (https://github.com/linweiyuan/go-chatgpt-api/issues/251)
+- 支持 `ChatGPT` 转 `API`，接口 `/imitate/v1/chat/completions`，利用 `accessToken` 模拟 `apiKey`，实现伪免费使用 `API`，从而支持集成仅支持 `apiKey` 调用的第三方客户端项目，分享一个好用的脚本测试 `web-to-api` (https://github.com/dhso/go-chatgpt-api/issues/251)
 
 ```python
 import openai
@@ -47,19 +47,19 @@ while True:
 
 范例（URL 和参数基本保持着和官网一致，部分接口有些许改动），部分例子，不是全部，**理论上**全部基于文本传输的接口都支持
 
-https://github.com/linweiyuan/go-chatgpt-api/tree/main/example
+https://github.com/dhso/go-chatgpt-api/tree/main/example
 
 ---
 
 ### 使用的过程中遇到问题应该如何解决
 
-汇总贴：https://github.com/linweiyuan/go-chatgpt-api/issues/74
+汇总贴：https://github.com/dhso/go-chatgpt-api/issues/74
 
-如果有疑问而不是什么程序出错其实可以在 [Discussions](https://github.com/linweiyuan/go-chatgpt-api/discussions) 里发而不是新增 Issue
+如果有疑问而不是什么程序出错其实可以在 [Discussions](https://github.com/dhso/go-chatgpt-api/discussions) 里发而不是新增 Issue
 
-群聊：https://github.com/linweiyuan/go-chatgpt-api/discussions/197
+群聊：https://github.com/dhso/go-chatgpt-api/discussions/197
 
-再说一遍，不要来 `Issues` 提你的疑问（再提不回复直接关闭），有讨论区，有群，不要提脑残问题，反面教材：https://github.com/linweiyuan/go-chatgpt-api/issues/255
+再说一遍，不要来 `Issues` 提你的疑问（再提不回复直接关闭），有讨论区，有群，不要提脑残问题，反面教材：https://github.com/dhso/go-chatgpt-api/issues/255
 
 ---
 
@@ -77,13 +77,13 @@ https://github.com/linweiyuan/go-chatgpt-api/tree/main/example
 
 ---
 
-`GPT-4` 相关模型目前需要验证 `arkose_token`，社区已经有很多解决方案，请自行查找，其中一个能用的：https://github.com/linweiyuan/go-chatgpt-api/issues/252
+`GPT-4` 相关模型目前需要验证 `arkose_token`，社区已经有很多解决方案，请自行查找，其中一个能用的：https://github.com/dhso/go-chatgpt-api/issues/252
 
 参考配置视频（拉到文章最下面点开视频，需要自己有一定的动手能力，根据你的环境不同自行微调配置）：[如何生成 GPT-4 arkose_token](https://linweiyuan.github.io/2023/06/24/%E5%A6%82%E4%BD%95%E7%94%9F%E6%88%90-GPT-4-arkose-token.html)
 
 ---
 
-根据你的网络环境不同，可以展开查看对应配置，下面例子是基本参数，更多参数查看 [compose.yaml](https://github.com/linweiyuan/go-chatgpt-api/blob/main/compose.yaml)
+根据你的网络环境不同，可以展开查看对应配置，下面例子是基本参数，更多参数查看 [compose.yaml](https://github.com/dhso/go-chatgpt-api/blob/main/compose.yaml)
 
 <details>
 
@@ -157,7 +157,7 @@ Account type: Team （设置正常）
 
 点击下面的按钮一键部署，缺点是免费版本冷启动比较慢
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/linweiyuan/go-chatgpt-api)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/dhso/go-chatgpt-api)
 
 ---
 
@@ -231,7 +231,7 @@ BASE_URL=http://go-chatgpt-api:8080/imitate
 
 ### 最后感谢各位同学
 
-<a href="https://github.com/linweiyuan/go-chatgpt-api/graphs/contributors">
+<a href="https://github.com/dhso/go-chatgpt-api/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=linweiyuan/go-chatgpt-api"  alt=""/>
 </a>
 

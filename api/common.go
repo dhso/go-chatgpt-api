@@ -171,6 +171,15 @@ func GetArkoseToken() (string, error) {
 	return funcaptcha.GetOpenAIToken(PUID, ProxyUrl)
 }
 
+func GetBasicToken(c *gin.Context) string {
+	basicToken := c.GetString(AuthorizationHeader)
+	if !strings.HasPrefix(basicToken, "Basic") {
+		return "Basic " + basicToken
+	}
+
+	return basicToken
+}
+
 func setupPUID() {
 	username := os.Getenv("OPENAI_EMAIL")
 	password := os.Getenv("OPENAI_PASSWORD")
