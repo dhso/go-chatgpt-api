@@ -173,6 +173,9 @@ func GetArkoseToken() (string, error) {
 
 func GetBasicToken(c *gin.Context) string {
 	basicToken := c.GetString(AuthorizationHeader)
+	if strings.HasPrefix(basicToken, "Bearer") {
+		basicToken = strings.Replace(basicToken, "Bearer", "Basic", 1)
+	}
 	if !strings.HasPrefix(basicToken, "Basic") {
 		return "Basic " + basicToken
 	}
