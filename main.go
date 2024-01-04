@@ -10,6 +10,7 @@ import (
 
 	"github.com/dhso/go-chatgpt-api/api"
 	"github.com/dhso/go-chatgpt-api/api/chatgpt"
+	"github.com/dhso/go-chatgpt-api/api/copilot"
 	"github.com/dhso/go-chatgpt-api/api/imitate"
 	"github.com/dhso/go-chatgpt-api/api/patgpt"
 	"github.com/dhso/go-chatgpt-api/api/platform"
@@ -33,6 +34,7 @@ func main() {
 	setupPandoraAPIs(router)
 	setupImitateAPIs(router)
 	setupPatgptAPIs(router)
+	setupCopilotAPIs(router)
 	router.NoRoute(api.Proxy)
 
 	router.GET("/", func(c *gin.Context) {
@@ -102,6 +104,17 @@ func setupPatgptAPIs(router *gin.Engine) {
 		{
 			apiGroup.POST("/chat/completions", patgpt.CreateChatCompletions)
 			apiGroup.POST("/completions", patgpt.CreateCompletions)
+		}
+	}
+}
+
+func setupCopilotAPIs(router *gin.Engine) {
+	copilotGroup := router.Group("/copilot")
+	{
+		apiGroup := copilotGroup.Group("/v1")
+		{
+			apiGroup.POST("/chat/completions", copilot.CreateChatCompletions)
+			apiGroup.POST("/completions", copilot.CreateCompletions)
 		}
 	}
 }

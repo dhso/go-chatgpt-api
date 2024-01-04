@@ -183,6 +183,18 @@ func GetBasicToken(c *gin.Context) string {
 	return basicToken
 }
 
+func GetGithubToken(c *gin.Context) string {
+	token := c.GetString(AuthorizationHeader)
+	if strings.HasPrefix(token, "Bearer") {
+		token = strings.Replace(token, "Bearer", "token", 1)
+	}
+	if !strings.HasPrefix(token, "token") {
+		return "token " + token
+	}
+
+	return token
+}
+
 func setupPUID() {
 	username := os.Getenv("OPENAI_EMAIL")
 	password := os.Getenv("OPENAI_PASSWORD")
