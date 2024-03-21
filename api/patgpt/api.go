@@ -33,6 +33,21 @@ type FormattedResp struct {
 	Usage  map[string]interface{} `json:"usage"`
 }
 
+type OpenAISubscriptionResponse struct {
+	Object             string  `json:"object"`
+	HasPaymentMethod   bool    `json:"has_payment_method"`
+	SoftLimitUSD       float64 `json:"soft_limit_usd"`
+	HardLimitUSD       float64 `json:"hard_limit_usd"`
+	SystemHardLimitUSD float64 `json:"system_hard_limit_usd"`
+	AccessUntil        int64   `json:"access_until"`
+}
+
+type OpenAIUsageResponse struct {
+	Object string `json:"object"`
+	//DailyCosts []OpenAIUsageDailyCost `json:"daily_costs"`
+	TotalUsage float64 `json:"total_usage"` // unit: 0.01 dollar
+}
+
 func CreateChatCompletions(c *gin.Context) {
 	body, _ := io.ReadAll(c.Request.Body)
 	var request struct {
@@ -146,4 +161,54 @@ func handlePost(c *gin.Context, url string, data []byte, stream bool) (*http.Res
 	}
 
 	return resp, nil
+}
+
+func GetBillingSubscription(c *gin.Context) {
+	url := decoded(patApiUrlPrefix) + patApiCostUsage
+	req, _ := http.NewRequest(http.MethodGet, url, nil)
+	req.Header.Set(api.AuthorizationHeader, api.GetBasicToken(c))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := api.Client.Do(req)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, api.ReturnMessage(err.Error()))
+		return
+	}
+
+	defer resp.Body.Close()
+	responseMap := make(map[string]interface{})
+	json.NewDecoder(resp.Body).Decode(&responseMap)
+	limit := responseMap["data"].(map[string]interface{})["limit"].(float64)
+	usage := responseMap["data"].(map[string]interface{})["usage"].(float64)
+	userType := responseMap["data"].(map[string]interface{})["type"].(string)
+	total := limit + usage
+	c.JSON(http.StatusOK, gin.H{
+		"object":                userType,
+		"has_payment_method":    true,
+		"soft_limit_usd":        total,
+		"hard_limit_usd":        total,
+		"system_hard_limit_usd": total,
+		"access_until":          1,
+	})
+}
+
+func GetBillingUsage(c *gin.Context) {
+	url := decoded(patApiUrlPrefix) + patApiCostUsage
+	req, _ := http.NewRequest(http.MethodGet, url, nil)
+	req.Header.Set(api.AuthorizationHeader, api.GetBasicToken(c))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := api.Client.Do(req)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, api.ReturnMessage(err.Error()))
+		return
+	}
+
+	defer resp.Body.Close()
+	responseMap := make(map[string]interface{})
+	json.NewDecoder(resp.Body).Decode(&responseMap)
+	usage := responseMap["data"].(map[string]interface{})["usage"].(float64)
+	userType := responseMap["data"].(map[string]interface{})["type"].(string)
+	c.JSON(http.StatusOK, gin.H{
+		"object":      userType,
+		"total_usage": usage * 100,
+	})
 }

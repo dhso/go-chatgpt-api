@@ -104,6 +104,8 @@ func setupPatgptAPIs(router *gin.Engine) {
 		{
 			apiGroup.POST("/chat/completions", patgpt.CreateChatCompletions)
 			apiGroup.POST("/completions", patgpt.CreateCompletions)
+			apiGroup.GET("/dashboard/billing/subscription", patgpt.GetBillingSubscription)
+			apiGroup.GET("/dashboard/billing/usage", patgpt.GetBillingUsage)
 		}
 	}
 }

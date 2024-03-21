@@ -14,6 +14,7 @@ const (
 	patApiUrlPrefix             = "aHR0cHM6Ly9wYXQtYXBpLm1pbndzLmNvbQ=="
 	patApiCreateChatCompletions = "/compute/openai_chatgpt_turbo"
 	patApiCreateCompletions     = "/compute/openai_chatgpt_turbo"
+	patApiCostUsage             = "/common/cost/usage"
 
 	getSessionKeyErrorMessage = "failed to get session key"
 )
