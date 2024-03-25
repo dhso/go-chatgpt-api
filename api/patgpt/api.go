@@ -148,9 +148,16 @@ func HandleClaudeResponseWithStream(c *gin.Context, resp *http.Response) {
 		if strings.HasPrefix(line, "event") || line == "" {
 			continue
 		}
+
 		if strings.HasPrefix(line, "data:") {
+			line = "data: " + strings.TrimPrefix(line, "data:")
+		}
+
+		if line == "data: finish" {
+			line = "data: [DONE]"
+		} else {
 			var jsonLine map[string]interface{}
-			err := json.Unmarshal([]byte(strings.TrimPrefix(line, "data:")), &jsonLine)
+			err := json.Unmarshal([]byte(strings.TrimPrefix(line, "data: ")), &jsonLine)
 			if err != nil {
 				break
 			}
@@ -158,16 +165,22 @@ func HandleClaudeResponseWithStream(c *gin.Context, resp *http.Response) {
 			if model == "" {
 				continue
 			}
-			if jsonLine["message"] == nil {
-				jsonLine["message"] = ""
+			var delta Message
+			var finishReason string
+			if jsonLine["message"] != nil {
+				content := jsonLine["message"].(string)
+				delta = Message{
+					Role:    "assistant",
+					Content: content,
+				}
+			} else {
+				finishReason = "stop"
 			}
+
 			var choices []StreamingChoice
 			choices = append(choices, StreamingChoice{
-				Delta: Message{
-					Role:    "assistant",
-					Content: jsonLine["message"].(string),
-				},
-				FinishReason: "",
+				Delta:        delta,
+				FinishReason: finishReason,
 				Index:        0,
 			})
 			usage := map[string]interface{}{}
@@ -186,10 +199,6 @@ func HandleClaudeResponseWithStream(c *gin.Context, resp *http.Response) {
 			}
 
 			line = "data: " + string(strLine)
-		}
-
-		if line == "data: finish" {
-			line = "data: [DONE]"
 		}
 
 		c.Writer.Write([]byte(line + "\n\n"))
