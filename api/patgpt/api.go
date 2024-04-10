@@ -55,7 +55,7 @@ type OpenAIRequest struct {
 	MaxToken    int                      `json:"max_tokens"`
 	Message     string                   `json:"message"`
 	Messages    []map[string]interface{} `json:"messages"`
-	Temperature int                      `json:"temperature"`
+	Temperature float64                  `json:"temperature"`
 }
 
 type OpenAIUsageResponse struct {
@@ -75,7 +75,7 @@ func HandleUrl(c *gin.Context, request OpenAIRequest) string {
 }
 
 func HandleBody(c *gin.Context, request OpenAIRequest, body []byte) []byte {
-	if strings.Contains(request.Model, "claude-3-sonnet") {
+	if strings.Contains(request.Model, "claude-3-sonnet") || strings.Contains(request.Model, "patent-0.3") {
 		request.Message = request.Messages[0]["content"].(string)
 		newBody, err := json.Marshal(request)
 		if err != nil {
@@ -93,7 +93,7 @@ func CreateChatCompletions(c *gin.Context) {
 
 	url := HandleUrl(c, request)
 	body := HandleBody(c, request, reqBody)
-	resp, err := HandlePost(c, url, body, request.Stream)
+	resp, err := HandlePost(c, url, body, request)
 	if err != nil {
 		return
 	}
@@ -110,18 +110,14 @@ func CreateChatCompletions(c *gin.Context) {
 }
 
 func HandleResponse(c *gin.Context, resp *http.Response, request OpenAIRequest) {
-	if strings.Contains(request.Model, "claude-3-sonnet") {
-		if request.Stream {
+	if request.Stream {
+		if strings.Contains(request.Model, "claude-3-sonnet") {
 			HandleClaudeResponseWithStream(c, resp)
 		} else {
-			HandleClaudeResponse(c, resp)
+			HandleCompletionsResponseWithStream(c, resp)
 		}
 	} else {
-		if request.Stream {
-			HandleCompletionsResponseWithStream(c, resp)
-		} else {
-			HandleCompletionsResponse(c, resp)
-		}
+		HandleCompletionsResponse(c, resp)
 	}
 }
 
@@ -145,7 +141,7 @@ func HandleClaudeResponseWithStream(c *gin.Context, resp *http.Response) {
 
 		line = strings.TrimSpace(line)
 
-		if strings.HasPrefix(line, "event") || line == "" {
+		if strings.HasPrefix(line, "event:") || line == "" {
 			continue
 		}
 
@@ -153,14 +149,9 @@ func HandleClaudeResponseWithStream(c *gin.Context, resp *http.Response) {
 			line = "data: " + strings.TrimPrefix(line, "data:")
 		}
 
-		if line == "data: finish" {
-			line = "data: [DONE]"
-		} else {
-			var jsonLine map[string]interface{}
-			err := json.Unmarshal([]byte(strings.TrimPrefix(line, "data: ")), &jsonLine)
-			if err != nil {
-				break
-			}
+		var jsonLine map[string]interface{}
+		err = json.Unmarshal([]byte(strings.TrimPrefix(line, "data: ")), &jsonLine)
+		if err == nil {
 			model := jsonLine["model"].(string)
 			if model == "" {
 				continue
@@ -201,35 +192,13 @@ func HandleClaudeResponseWithStream(c *gin.Context, resp *http.Response) {
 			line = "data: " + string(strLine)
 		}
 
+		if line == "data: finish" {
+			line = "data: [DONE]"
+		}
+
 		c.Writer.Write([]byte(line + "\n\n"))
 		c.Writer.Flush()
 	}
-}
-
-func HandleClaudeResponse(c *gin.Context, resp *http.Response) {
-	responseMap := make(map[string]interface{})
-	json.NewDecoder(resp.Body).Decode(&responseMap)
-	var choices []Choice
-	choices = append(choices, Choice{
-		Message: Message{
-			Role:    "assistant",
-			Content: responseMap["data"].(map[string]interface{})["message"].(string),
-		},
-		FinishReason: responseMap["data"].(map[string]interface{})["finish_reason"].(string),
-		Index:        0,
-	})
-	model := responseMap["data"].(map[string]interface{})["model"].(string)
-	usage := responseMap["data"].(map[string]interface{})["usage"].(map[string]interface{})
-	var ts = time.Now().Unix()
-	id := "chatcmpl-" + fmt.Sprint(ts)
-	c.JSON(http.StatusOK, gin.H{
-		"model":   model,
-		"choices": choices,
-		"usage":   usage,
-		"id":      id,
-		"object":  "chat.completion",
-		"created": ts,
-	})
 }
 
 func HandleCompletionsResponseWithStream(c *gin.Context, resp *http.Response) {
@@ -248,7 +217,7 @@ func HandleCompletionsResponseWithStream(c *gin.Context, resp *http.Response) {
 
 		line = strings.TrimSpace(line)
 
-		if strings.HasPrefix(line, "event") || line == "" {
+		if strings.HasPrefix(line, "event:") || line == "" {
 			continue
 		}
 		if strings.HasPrefix(line, "data:") {
@@ -267,17 +236,26 @@ func HandleCompletionsResponseWithStream(c *gin.Context, resp *http.Response) {
 func HandleCompletionsResponse(c *gin.Context, resp *http.Response) {
 	responseMap := make(map[string]interface{})
 	json.NewDecoder(resp.Body).Decode(&responseMap)
+	jsonData := responseMap["data"].(map[string]interface{})
+	message := jsonData["message"]
+	if message == nil {
+		message = ""
+	}
+	finishReason := jsonData["finish_reason"]
+	if finishReason == nil {
+		finishReason = ""
+	}
 	var choices []Choice
 	choices = append(choices, Choice{
 		Message: Message{
 			Role:    "assistant",
-			Content: responseMap["data"].(map[string]interface{})["message"].(string),
+			Content: message.(string),
 		},
-		FinishReason: responseMap["data"].(map[string]interface{})["finish_reason"].(string),
+		FinishReason: finishReason.(string),
 		Index:        0,
 	})
-	model := responseMap["data"].(map[string]interface{})["model"].(string)
-	usage := responseMap["data"].(map[string]interface{})["usage"].(map[string]interface{})
+	model := jsonData["model"].(string)
+	usage := jsonData["usage"].(map[string]interface{})
 	var ts = time.Now().Unix()
 	id := "chatcmpl-" + fmt.Sprint(ts)
 	c.JSON(http.StatusOK, gin.H{
@@ -290,10 +268,13 @@ func HandleCompletionsResponse(c *gin.Context, resp *http.Response) {
 	})
 }
 
-func HandlePost(c *gin.Context, url string, data []byte, stream bool) (*http.Response, error) {
+func HandlePost(c *gin.Context, url string, data []byte, request OpenAIRequest) (*http.Response, error) {
 	req, _ := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(data))
 	req.Header.Set(api.AuthorizationHeader, api.GetBasicToken(c))
-	if stream {
+	if strings.Contains(request.Model, "patent-0.3") {
+		req.Header.Set("X-Ai-Engine", "patsnap")
+	}
+	if request.Stream {
 		req.Header.Set("Accept", "text/event-stream")
 	}
 	req.Header.Set("Content-Type", "application/json")
