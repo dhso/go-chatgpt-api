@@ -65,24 +65,10 @@ type OpenAIUsageResponse struct {
 }
 
 func HandleUrl(c *gin.Context, request OpenAIRequest) string {
-	var url = ""
-	if strings.Contains(request.Model, "claude-3-sonnet") {
-		url = decoded(patApiUrlPrefix) + patApiAggregation
-	} else {
-		url = decoded(patApiUrlPrefix) + patApiCreateCompletions
-	}
-	return url
+	return decoded(patApiUrlPrefix) + patApiCreateCompletions
 }
 
 func HandleBody(c *gin.Context, request OpenAIRequest, body []byte) []byte {
-	if strings.Contains(request.Model, "claude-3-sonnet") || strings.Contains(request.Model, "patent-0.3") {
-		request.Message = request.Messages[0]["content"].(string)
-		newBody, err := json.Marshal(request)
-		if err != nil {
-			return body
-		}
-		return newBody
-	}
 	return body
 }
 
@@ -111,11 +97,7 @@ func CreateChatCompletions(c *gin.Context) {
 
 func HandleResponse(c *gin.Context, resp *http.Response, request OpenAIRequest) {
 	if request.Stream {
-		if strings.Contains(request.Model, "claude-3-sonnet") {
-			HandleClaudeResponseWithStream(c, resp)
-		} else {
-			HandleCompletionsResponseWithStream(c, resp)
-		}
+		HandleCompletionsResponseWithStream(c, resp)
 	} else {
 		HandleCompletionsResponse(c, resp)
 	}
@@ -271,7 +253,17 @@ func HandleCompletionsResponse(c *gin.Context, resp *http.Response) {
 func HandlePost(c *gin.Context, url string, data []byte, request OpenAIRequest) (*http.Response, error) {
 	req, _ := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(data))
 	req.Header.Set(api.AuthorizationHeader, api.GetBasicToken(c))
-	if strings.Contains(request.Model, "patent-0.3") {
+	if strings.HasPrefix(request.Model, "gpt-") {
+		if request.Model == "gpt-4-turbo" {
+			req.Header.Set("X-Ai-Engine", "openai")
+		} else {
+			req.Header.Set("X-Ai-Engine", "azure")
+		}
+	} else if strings.HasPrefix(request.Model, "claude-") {
+		req.Header.Set("X-Ai-Engine", "anthropic")
+	} else if strings.HasPrefix(request.Model, "gemini-") {
+		req.Header.Set("X-Ai-Engine", "google")
+	} else if strings.HasPrefix(request.Model, "patent-") {
 		req.Header.Set("X-Ai-Engine", "patsnap")
 	}
 	if request.Stream {
@@ -335,4 +327,35 @@ func GetBillingUsage(c *gin.Context) {
 		"object":      userType,
 		"total_usage": usage * 100,
 	})
+}
+
+func CreateEmbeddings(c *gin.Context) {
+	reqBody, _ := io.ReadAll(c.Request.Body)
+	var request OpenAIRequest
+	json.Unmarshal(reqBody, &request)
+
+	url := decoded(patApiUrlPrefix) + patApiCreateEmbeddings
+	req, _ := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(reqBody))
+	req.Header.Set(api.AuthorizationHeader, api.GetBasicToken(c))
+	req.Header.Set("X-Ai-Engine", "openai")
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := api.Client.Do(req)
+
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, api.ReturnMessage(err.Error()))
+		return
+	}
+
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusUnauthorized {
+		logger.Error(fmt.Sprintf(api.AccountDeactivatedErrorMessage, c.GetString(c.Request.Header.Get(api.AuthorizationHeader))))
+		responseMap := make(map[string]interface{})
+		json.NewDecoder(resp.Body).Decode(&responseMap)
+		c.AbortWithStatusJSON(resp.StatusCode, responseMap)
+		return
+	}
+	responseMap := make(map[string]interface{})
+	json.NewDecoder(resp.Body).Decode(&responseMap)
+	jsonData := responseMap["data"].(map[string]interface{})
+	c.JSON(http.StatusOK, jsonData)
 }

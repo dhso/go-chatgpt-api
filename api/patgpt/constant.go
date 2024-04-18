@@ -16,6 +16,5 @@ const (
 	patApiCreateCompletions     = "/compute/openai_chatgpt_turbo"
 	patApiAggregation           = "/compute/chatgpt_aggregation"
 	patApiCostUsage             = "/common/cost/usage"
-
-	getSessionKeyErrorMessage = "failed to get session key"
+	patApiCreateEmbeddings      = "/compute/openai_embeddings"
 )
