@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -225,4 +226,36 @@ func setupPUID() {
 			}
 		}()
 	}
+}
+
+func GetImageBase64Str(url string) string {
+	req, _ := http.NewRequest(http.MethodGet, url, nil)
+	resp, err := Client.Do(req)
+	if err != nil {
+		logger.Error(err.Error())
+		return ""
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Error(err.Error())
+		return ""
+	}
+	base64Str := base64.StdEncoding.EncodeToString(body)
+	format := ""
+	if strings.HasPrefix(base64Str, "/9j") {
+		format = "image/jpg"
+	} else if strings.HasPrefix(base64Str, "iVB") {
+		format = "image/png"
+	} else if strings.HasPrefix(base64Str, "R0l") {
+		format = "image/gif"
+	} else if strings.HasPrefix(base64Str, "Ukl") {
+		format = "image/webp"
+	} else if strings.HasPrefix(base64Str, "Qk0") {
+		format = "image/bmp"
+	} else if strings.HasPrefix(base64Str, "JVB") {
+		format = "image/pdf"
+	}
+	base64Str = "data:" + format + ";base64," + base64Str
+	return base64Str
 }

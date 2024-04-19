@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"time"
 
@@ -30,8 +31,24 @@ type StreamingChoice struct {
 
 type Message struct {
 	Role      string                   `json:"role"`
-	Content   string                   `json:"content"`
+	Content   any                      `json:"content"`
 	ToolCalls []map[string]interface{} `json:"tool_calls"`
+}
+
+type MessageContent struct {
+	Type     string               `json:"type"`
+	ImageUrl ImageUrl             `json:"image_url,omitempty"`
+	Text     string               `json:"text,omitempty"`
+	Source   MessageContentSource `json:"source,omitempty"`
+}
+
+type ImageUrl struct {
+	Url string `json:"url"`
+}
+type MessageContentSource struct {
+	Type      string `json:"type"`
+	MediaType string `json:"media_type"`
+	Data      string `json:"data"`
 }
 
 type FormattedResp struct {
@@ -50,12 +67,12 @@ type OpenAISubscriptionResponse struct {
 }
 
 type OpenAIRequest struct {
-	Stream      bool                     `json:"stream"`
-	Model       string                   `json:"model"`
-	MaxToken    int                      `json:"max_tokens"`
-	Message     string                   `json:"message"`
-	Messages    []map[string]interface{} `json:"messages"`
-	Temperature float64                  `json:"temperature"`
+	Stream      bool      `json:"stream"`
+	Model       string    `json:"model"`
+	MaxToken    int       `json:"max_tokens"`
+	Message     string    `json:"message"`
+	Messages    []Message `json:"messages"`
+	Temperature float64   `json:"temperature"`
 }
 
 type OpenAIUsageResponse struct {
@@ -64,12 +81,8 @@ type OpenAIUsageResponse struct {
 	TotalUsage float64 `json:"total_usage"` // unit: 0.01 dollar
 }
 
-func HandleUrl(c *gin.Context, request OpenAIRequest) string {
-	return decoded(patApiUrlPrefix) + patApiCreateCompletions
-}
-
-func HandleBody(c *gin.Context, request OpenAIRequest, body []byte) []byte {
-	return body
+func CreateCompletions(c *gin.Context) {
+	CreateChatCompletions(c)
 }
 
 func CreateChatCompletions(c *gin.Context) {
@@ -95,16 +108,63 @@ func CreateChatCompletions(c *gin.Context) {
 	HandleResponse(c, resp, request)
 }
 
+func HandleUrl(c *gin.Context, request OpenAIRequest) string {
+	return decoded(patApiUrlPrefix) + patApiCreateCompletions
+}
+
+func HandleBody(c *gin.Context, request OpenAIRequest, body []byte) []byte {
+	if len(request.Messages) == 0 {
+		return body
+	}
+
+	for i, message := range request.Messages {
+		switch contents := message.Content.(type) {
+		case string:
+			continue
+		case []interface{}:
+			// 循环处理messages
+			for i, content := range contents {
+				_content := content.(map[string]interface{})
+				if _content["type"] == "image_url" {
+					base64Str := _content["image_url"].(map[string]interface{})["url"].(string)
+					if !strings.HasPrefix(base64Str, "data:") {
+						// 访问图片链接转成base64
+						base64Str = api.GetImageBase64Str(base64Str)
+					}
+					base64Parts := strings.Split(base64Str, ";")
+					if len(base64Parts) < 2 {
+						continue
+					}
+					mediaType := strings.TrimPrefix(base64Parts[0], "data:")
+					data := strings.TrimPrefix(base64Parts[1], "base64,")
+					content = map[string]interface{}{
+						"type": "image",
+						"source": map[string]interface{}{
+							"type":       "base64",
+							"media_type": mediaType,
+							"data":       data,
+						},
+					}
+					contents[i] = content
+				}
+			}
+			request.Messages[i].Content = contents
+		}
+
+	}
+	newBody, err := json.Marshal(request)
+	if err != nil {
+		return body
+	}
+	return newBody
+}
+
 func HandleResponse(c *gin.Context, resp *http.Response, request OpenAIRequest) {
 	if request.Stream {
 		HandleCompletionsResponseWithStream(c, resp)
 	} else {
 		HandleCompletionsResponse(c, resp)
 	}
-}
-
-func CreateCompletions(c *gin.Context) {
-	CreateChatCompletions(c)
 }
 
 func HandleClaudeResponseWithStream(c *gin.Context, resp *http.Response) {
@@ -218,6 +278,19 @@ func HandleCompletionsResponseWithStream(c *gin.Context, resp *http.Response) {
 func HandleCompletionsResponse(c *gin.Context, resp *http.Response) {
 	responseMap := make(map[string]interface{})
 	json.NewDecoder(resp.Body).Decode(&responseMap)
+	errorCode := responseMap["error_code"].(float64)
+	if errorCode == 429 {
+		errorMessage := responseMap["msg"].(string)
+		c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
+			"error": gin.H{
+				"message": errorMessage,
+				"type":    "rate_limit_error",
+				"param":   "",
+				"code":    "invalid_api_key",
+			},
+		})
+		return
+	}
 	jsonData := responseMap["data"].(map[string]interface{})
 	message := jsonData["message"]
 	if message == nil {
@@ -225,6 +298,14 @@ func HandleCompletionsResponse(c *gin.Context, resp *http.Response) {
 	}
 	finishReason := jsonData["finish_reason"]
 	if finishReason == nil {
+		finishReason = ""
+	}
+	switch v := finishReason.(type) {
+	case float64:
+		finishReason = strconv.FormatFloat(v, 'f', -1, 64)
+	case string:
+		finishReason = v
+	default:
 		finishReason = ""
 	}
 	var choices []Choice
