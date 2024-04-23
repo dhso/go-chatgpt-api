@@ -24,7 +24,7 @@ func init() {
 }
 
 func main() {
-	log.Printf("version: %s", "2024032501")
+	log.Printf("version: %s", "2024042301")
 	router := gin.Default()
 
 	router.Use(middleware.CORS())

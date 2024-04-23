@@ -45,6 +45,7 @@ const (
 
 	EmailKey                       = "email"
 	AccountDeactivatedErrorMessage = "account %s is deactivated"
+	AccountForbiddenErrorMessage   = "account %s is forbidden"
 
 	ReadyHint = "service go-chatgpt-api is ready"
 

@@ -238,3 +238,5 @@ BASE_URL=http://go-chatgpt-api:8080/imitate
 ---
 
 ![](https://linweiyuan.github.io/about/mm_reward_qrcode.png)
+
+docker build . -t dhso/go-chatgpt-api:latest

@@ -98,14 +98,18 @@ func CreateChatCompletions(c *gin.Context) {
 	}
 
 	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusUnauthorized {
-		logger.Error(fmt.Sprintf(api.AccountDeactivatedErrorMessage, c.GetString(c.Request.Header.Get(api.AuthorizationHeader))))
-		responseMap := make(map[string]interface{})
-		json.NewDecoder(resp.Body).Decode(&responseMap)
-		c.AbortWithStatusJSON(resp.StatusCode, responseMap)
+	switch resp.StatusCode {
+	case http.StatusOK:
+		HandleResponse(c, resp, request)
 		return
+	case http.StatusUnauthorized:
+		logger.Error(fmt.Sprintf(api.AccountDeactivatedErrorMessage, c.GetString(c.Request.Header.Get(api.AuthorizationHeader))))
+	case http.StatusForbidden:
+		logger.Error(fmt.Sprintf(api.AccountForbiddenErrorMessage, c.GetString(c.Request.Header.Get(api.AuthorizationHeader))))
 	}
-	HandleResponse(c, resp, request)
+	responseMap := make(map[string]interface{})
+	json.NewDecoder(resp.Body).Decode(&responseMap)
+	c.AbortWithStatusJSON(resp.StatusCode, responseMap)
 }
 
 func HandleUrl(c *gin.Context, request OpenAIRequest) string {
@@ -372,6 +376,12 @@ func GetBillingSubscription(c *gin.Context) {
 	}
 
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		responseMap := make(map[string]interface{})
+		json.NewDecoder(resp.Body).Decode(&responseMap)
+		c.AbortWithStatusJSON(resp.StatusCode, responseMap)
+		return
+	}
 	responseMap := make(map[string]interface{})
 	json.NewDecoder(resp.Body).Decode(&responseMap)
 	limit := responseMap["data"].(map[string]interface{})["limit"].(float64)
@@ -400,6 +410,12 @@ func GetBillingUsage(c *gin.Context) {
 	}
 
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		responseMap := make(map[string]interface{})
+		json.NewDecoder(resp.Body).Decode(&responseMap)
+		c.AbortWithStatusJSON(resp.StatusCode, responseMap)
+		return
+	}
 	responseMap := make(map[string]interface{})
 	json.NewDecoder(resp.Body).Decode(&responseMap)
 	usage := responseMap["data"].(map[string]interface{})["usage"].(float64)

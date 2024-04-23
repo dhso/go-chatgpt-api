@@ -163,12 +163,12 @@ curl http://192.168.17.18:8080/patgpt/v1/chat/completions \
 
 curl http://192.168.17.18:8080/patgpt/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -H "Authorization: ZG9uZ2hhbzpCTFVOWVlWUzVNOXVZb21DNzdmUFZp" \
+  -H "Authorization: cWluamlsaWFuZzpxekh3RkRtN2V2a2t3WGJmejl3aHVo" \
   -d '{
      "model": "gpt-3.5-turbo-16k",
      "messages": [{"role": "user", "content": "hello!"}],
      "temperature": 0.7,
-     "stream": true
+     "stream": false
    }'
 
 curl http://192.168.17.18:8080/patgpt/v1/chat/completions \
@@ -529,3 +529,20 @@ curl https://one-api.minws.com/v1/chat/completions \
      "temperature": 0.7,
      "stream": false
    }'
+
+
+   curl 'http://rd-gateway.patsnap.io/compute/openai_chatgpt_turbo' \
+  -H 'Accept-Language: zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7,zh-TW;q=0.6' \
+  -H 'Authorization: Basic cWluamlsaWFuZzpxekh3RkRtN2V2a2t3WGJmejl3aHVo' \
+  -H 'Cache-Control: no-cache' \
+  -H 'Connection: keep-alive' \
+  -H 'Content-Type: text/event-stream' \
+  -H 'DNT: 1' \
+  -H 'Origin: http://ai.patsnap.io' \
+  -H 'Pragma: no-cache' \
+  -H 'Referer: http://ai.patsnap.io/' \
+  -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0' \
+  -H 'X-Ai-Engine: patsnap' \
+  -H 'accept: text/event-stream' \
+  --data-raw '{"message":"hello!","stream":true,"temperature":0.7,"model":"patent-0.3"}' \
+  --insecure
