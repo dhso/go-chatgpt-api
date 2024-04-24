@@ -52,7 +52,7 @@ curl https://one-api.minws.com/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer sk-J51WT4ztCuPxzaKJ96585cB9100d4dDfBfA192C29fF31c14" \
   -d '{
-     "model": "claude-3-sonnet-20240229",
+     "model": "claude-3-sonnet",
      "messages": [{"role": "user", "content": "hello!"}],
      "temperature": 0.7,
      "stream": true
@@ -228,7 +228,7 @@ curl http://192.168.17.18:8080/patgpt/v1/chat/completions \
   -H "Authorization: ZG9uZ2hhbzpCTFVOWVlWUzVNOXVZb21DNzdmUFZp" \
   -d '{
      "model": "gemini-1.5-pro-preview-0409",
-     "messages": [{"role": "user", "content": "hello!"}],
+     "messages": [{"role": "user", "content": "hello!"},{"role": "user", "content": "hello!"}],
      "temperature": 0.7,
      "stream": true
    }'
@@ -546,3 +546,73 @@ curl https://one-api.minws.com/v1/chat/completions \
   -H 'accept: text/event-stream' \
   --data-raw '{"message":"hello!","stream":true,"temperature":0.7,"model":"patent-0.3"}' \
   --insecure
+
+
+
+curl http://192.168.17.18:8080/patgpt/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: ZG9uZ2hhbzpCTFVOWVlWUzVNOXVZb21DNzdmUFZp" \
+  -d '{
+    "model": "gemini-1.5-pro-preview-0409",
+  "messages" : [ {
+    "role" : "system",
+    "content" : "You are an AI programming assistant.\nFollow the user'\''s requirements carefully & to the letter.\nYour responses should be informative and logical.\nYou should always adhere to technical information.\nIf the user asks for code or technical questions, you must provide code suggestions and adhere to technical information.\nIf the question is related to a developer, you must respond with content related to a developer.\nFirst think step-by-step - describe your plan for what to build in pseudocode, written out in great detail.\nThen output the code in a single code block.\nMinimize any other prose.\nKeep your answers short and impersonal.\nUse Markdown formatting in your answers.\nMake sure to include the programming language name at the start of the Markdown code blocks.\nAvoid wrapping the whole response in triple backticks.\nThe user works in an IDE built by JetBrains which has a concept for editors with open files, integrated unit test support, and output pane that shows the output of running the code as well as an integrated terminal.\nYou can only give one reply for each conversation turn."
+  }, {
+    "role" : "user",
+    "content" : "Explain the selected code \n```xml\n    <value>\n            <option name=\"INDENT_SIZE\" value=\"2\" />\n            <option name=\"CONTINUATION_INDENT_SIZE\" value=\"4\" />\n            <option name=\"TAB_SIZE\" value=\"2\" />\n            <option name=\"USE_TAB_CHARACTER\" value=\"false\" />\n            <option name=\"SMART_TABS\" value=\"false\" />\n            <option name=\"LABEL_INDENT_SIZE\" value=\"0\" />\n            <option name=\"LABEL_INDENT_ABSOLUTE\" value=\"false\" />\n            <option name=\"USE_RELATIVE_INDENTS\" value=\"false\" />\n        </value>\n    </option>\n```"
+  }, {
+    "role" : "assistant",
+    "content" : "This XML snippet appears to be a configuration for a code editor, likely from an IDE like IntelliJ IDEA by JetBrains. Here'\''s what each option does:\n\n- `INDENT_SIZE`: The number of spaces equivalent to one indent. Set to 2 spaces here.\n- `CONTINUATION_INDENT_SIZE`: The number of spaces to use for continuation indents (indents for code that wraps onto the next line). Set to 4 spaces here.\n- `TAB_SIZE`: The number of spaces that a tab character is equivalent to. Set to 2 spaces here.\n- `USE_TAB_CHARACTER`: If set to true, the editor will use tab characters for indentation. If false, it will use spaces. Set to false here, so spaces a re used.\n- `SMART_TABS`: If set to true, the editor will use a mix of tabs and spaces for indentation. If false, it will use only what'\''s specified in `USE_TAB_CHARACTER`. Set to false here.\n- `LABEL_INDENT_SIZE`: The number of spaces to use for label indents. Set to 0 here.\n- `LABEL_INDENT_ABSOLUTE`: If set to true, the editor will use absolute indents for labels. If false, it will use relative indents. Set to false here.\n- `USE_RELATIVE_INDENTS`: If set to true, the editor will use relative indents. If false, it will use absolute indents. Set to false here."
+  }, {
+    "role" : "user",
+    "content" : "继续\n```xml\n    <value>\n            <option name=\"INDENT_SIZE\" value=\"2\" />\n            <option name=\"CONTINUATION_INDENT_SIZE\" value=\"4\" />\n            <option name=\"TAB_SIZE\" value=\"2\" />\n            <option name=\"USE_TAB_CHARACTER\" value=\"false\" />\n            <option name=\"SMART_TABS\" value=\"false\" />\n            <option name=\"LABEL_INDENT_SIZE\" value=\"0\" />\n            <option name=\"LABEL_INDENT_ABSOLUTE\" value=\"false\" />\n            <option name=\"USE_RELATIVE_INDENTS\" value=\"false\" />\n        </value>\n    </option>\n```"
+  }, {
+    "role" : "assistant",
+    "content" : "This XML snippet is a configuration for a code editor, likely from an IDE like IntelliJ IDEA by JetBrains. Here'\''s what each option does:\n\n- `INDENT_SIZE`: The number of spaces equivalent to one indent. Set to 2 spaces here.\n- `CONTINUATION_INDENT_SIZE`: The number of spaces to use for continuation indents (indents for code that wraps onto the next line). Set to 4 spaces here.\n- `TAB_SIZE`: The number of spaces that a tab character is equivalent to. Set to 2 spaces here.\n- `USE_TAB_CHARACTER`: If set to true, the editor will use tab characters for indentation. If false, it will use spaces. Set to false here, so spaces are used.\n- `SMART_TABS`: If set to true, the editor will use a mix of tabs and spaces for indentation. If false, it will use only what'\''s specified in `USE_TAB_CHARACTER`. Set to false here.\n- `LABEL_INDENT_SIZE`: The number of spaces to use for label indents. Set to 0 here.\n- `LABEL_INDENT_ABSOLUTE`: If set to true, the editor will use absolute indents for labels. If false, it will use relative indents"
+  }, {
+    "role" : "user",
+    "content" : "继续"
+  }, {
+    "role" : "assistant",
+    "content" : "The XML snippet you'\''ve provided is a configuration for a code editor, likely from an IDE like IntelliJ IDEA by JetBrains. Here'\''s what each option does:\n\n- `INDENT_SIZE`: The number of spaces equivalent to one indent. Set to 2 spaces here.\n- `CONTINUATION_INDENT_SIZE`: The number of spaces to use for continuation indents (indents for code that wraps onto the next line). Set to 4 spaces here.\n- `TAB_SIZE`: The number of spaces that a tab character is equivalent to"
+  }, {
+    "role" : "user",
+    "content" : "Optimize the selected code \n```xml\n<option name=\"OTHER_INDENT_OPTIONS\">\n        <value>\n            <option name=\"INDENT_SIZE\" value=\"2\" />\n            <option name=\"CONTINUATION_INDENT_SIZE\" value=\"4\" />\n            <option name=\"TAB_SIZE\" value=\"2\" />\n            <option name=\"USE_TAB_CHARACTER\" value=\"false\" />\n            <option name=\"SMART_TABS\" value=\"false\" />\n            <option name=\"LABEL_INDENT_SIZE\" value=\"0\" />\n            <option name=\"LABEL_INDENT_ABSOLUTE\" value=\"false\" />\n            <option name=\"USE_RELATIVE_INDENTS\" value=\"false\" />\n        </value>\n    </option>\n```"
+  } ],
+  "max_tokens": 3000,
+    "stream": true
+  }'
+
+  curl http://192.168.17.18:8080/patgpt/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: ZG9uZ2hhbzpCTFVOWVlWUzVNOXVZb21DNzdmUFZp" \
+  -d '{
+    "model": "claude-3-sonnet",
+  "messages" : [ {
+    "role" : "system",
+    "content" : "You are an AI programming assistant.\nFollow the user'\''s requirements carefully & to the letter.\nYour responses should be informative and logical.\nYou should always adhere to technical information.\nIf the user asks for code or technical questions, you must provide code suggestions and adhere to technical information.\nIf the question is related to a developer, you must respond with content related to a developer.\nFirst think step-by-step - describe your plan for what to build in pseudocode, written out in great detail.\nThen output the code in a single code block.\nMinimize any other prose.\nKeep your answers short and impersonal.\nUse Markdown formatting in your answers.\nMake sure to include the programming language name at the start of the Markdown code blocks.\nAvoid wrapping the whole response in triple backticks.\nThe user works in an IDE built by JetBrains which has a concept for editors with open files, integrated unit test support, and output pane that shows the output of running the code as well as an integrated terminal.\nYou can only give one reply for each conversation turn."
+  }, {
+    "role" : "user",
+    "content" : "Explain the selected code \n```xml\n    <value>\n            <option name=\"INDENT_SIZE\" value=\"2\" />\n            <option name=\"CONTINUATION_INDENT_SIZE\" value=\"4\" />\n            <option name=\"TAB_SIZE\" value=\"2\" />\n            <option name=\"USE_TAB_CHARACTER\" value=\"false\" />\n            <option name=\"SMART_TABS\" value=\"false\" />\n            <option name=\"LABEL_INDENT_SIZE\" value=\"0\" />\n            <option name=\"LABEL_INDENT_ABSOLUTE\" value=\"false\" />\n            <option name=\"USE_RELATIVE_INDENTS\" value=\"false\" />\n        </value>\n    </option>\n```"
+  }, {
+    "role" : "assistant",
+    "content" : "This XML snippet appears to be a configuration for a code editor, likely from an IDE like IntelliJ IDEA by JetBrains. Here'\''s what each option does:\n\n- `INDENT_SIZE`: The number of spaces equivalent to one indent. Set to 2 spaces here.\n- `CONTINUATION_INDENT_SIZE`: The number of spaces to use for continuation indents (indents for code that wraps onto the next line). Set to 4 spaces here.\n- `TAB_SIZE`: The number of spaces that a tab character is equivalent to. Set to 2 spaces here.\n- `USE_TAB_CHARACTER`: If set to true, the editor will use tab characters for indentation. If false, it will use spaces. Set to false here, so spaces a re used.\n- `SMART_TABS`: If set to true, the editor will use a mix of tabs and spaces for indentation. If false, it will use only what'\''s specified in `USE_TAB_CHARACTER`. Set to false here.\n- `LABEL_INDENT_SIZE`: The number of spaces to use for label indents. Set to 0 here.\n- `LABEL_INDENT_ABSOLUTE`: If set to true, the editor will use absolute indents for labels. If false, it will use relative indents. Set to false here.\n- `USE_RELATIVE_INDENTS`: If set to true, the editor will use relative indents. If false, it will use absolute indents. Set to false here."
+  }, {
+    "role" : "user",
+    "content" : "继续\n```xml\n    <value>\n            <option name=\"INDENT_SIZE\" value=\"2\" />\n            <option name=\"CONTINUATION_INDENT_SIZE\" value=\"4\" />\n            <option name=\"TAB_SIZE\" value=\"2\" />\n            <option name=\"USE_TAB_CHARACTER\" value=\"false\" />\n            <option name=\"SMART_TABS\" value=\"false\" />\n            <option name=\"LABEL_INDENT_SIZE\" value=\"0\" />\n            <option name=\"LABEL_INDENT_ABSOLUTE\" value=\"false\" />\n            <option name=\"USE_RELATIVE_INDENTS\" value=\"false\" />\n        </value>\n    </option>\n```"
+  }, {
+    "role" : "assistant",
+    "content" : "This XML snippet is a configuration for a code editor, likely from an IDE like IntelliJ IDEA by JetBrains. Here'\''s what each option does:\n\n- `INDENT_SIZE`: The number of spaces equivalent to one indent. Set to 2 spaces here.\n- `CONTINUATION_INDENT_SIZE`: The number of spaces to use for continuation indents (indents for code that wraps onto the next line). Set to 4 spaces here.\n- `TAB_SIZE`: The number of spaces that a tab character is equivalent to. Set to 2 spaces here.\n- `USE_TAB_CHARACTER`: If set to true, the editor will use tab characters for indentation. If false, it will use spaces. Set to false here, so spaces are used.\n- `SMART_TABS`: If set to true, the editor will use a mix of tabs and spaces for indentation. If false, it will use only what'\''s specified in `USE_TAB_CHARACTER`. Set to false here.\n- `LABEL_INDENT_SIZE`: The number of spaces to use for label indents. Set to 0 here.\n- `LABEL_INDENT_ABSOLUTE`: If set to true, the editor will use absolute indents for labels. If false, it will use relative indents"
+  }, {
+    "role" : "user",
+    "content" : "继续"
+  }, {
+    "role" : "assistant",
+    "content" : "The XML snippet you'\''ve provided is a configuration for a code editor, likely from an IDE like IntelliJ IDEA by JetBrains. Here'\''s what each option does:\n\n- `INDENT_SIZE`: The number of spaces equivalent to one indent. Set to 2 spaces here.\n- `CONTINUATION_INDENT_SIZE`: The number of spaces to use for continuation indents (indents for code that wraps onto the next line). Set to 4 spaces here.\n- `TAB_SIZE`: The number of spaces that a tab character is equivalent to"
+  }, {
+    "role" : "user",
+    "content" : "Optimize the selected code \n```xml\n<option name=\"OTHER_INDENT_OPTIONS\">\n        <value>\n            <option name=\"INDENT_SIZE\" value=\"2\" />\n            <option name=\"CONTINUATION_INDENT_SIZE\" value=\"4\" />\n            <option name=\"TAB_SIZE\" value=\"2\" />\n            <option name=\"USE_TAB_CHARACTER\" value=\"false\" />\n            <option name=\"SMART_TABS\" value=\"false\" />\n            <option name=\"LABEL_INDENT_SIZE\" value=\"0\" />\n            <option name=\"LABEL_INDENT_ABSOLUTE\" value=\"false\" />\n            <option name=\"USE_RELATIVE_INDENTS\" value=\"false\" />\n        </value>\n    </option>\n```"
+  } ],
+  "max_tokens": 3000,
+    "stream": true
+  }'

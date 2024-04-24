@@ -122,12 +122,16 @@ func HandleBody(c *gin.Context, request OpenAIRequest, body []byte) []byte {
 	}
 
 	for i, message := range request.Messages {
+		if message.Role == "system" && (strings.HasPrefix(request.Model, "claude-") || strings.HasPrefix(request.Model, "gemini-")) {
+			message.Role = "user"
+			request.Messages[i] = message
+		}
 		switch contents := message.Content.(type) {
 		case string:
 			continue
 		case []interface{}:
 			// 循环处理messages
-			for i, content := range contents {
+			for j, content := range contents {
 				_content := content.(map[string]interface{})
 				if _content["type"] == "image_url" {
 					base64Str := _content["image_url"].(map[string]interface{})["url"].(string)
@@ -149,13 +153,21 @@ func HandleBody(c *gin.Context, request OpenAIRequest, body []byte) []byte {
 							"data":       data,
 						},
 					}
-					contents[i] = content
+					request.Messages[i].Content.([]interface{})[j] = content
 				}
 			}
-			request.Messages[i].Content = contents
 		}
 
 	}
+
+	if len(request.Messages) >= 2 && request.Messages[0].Role == "user" && request.Messages[1].Role == "user" {
+		request.Messages = append(request.Messages[:2], request.Messages[1:]...)
+		request.Messages[1] = Message{
+			Role:    "assistant",
+			Content: "ok",
+		}
+	}
+
 	newBody, err := json.Marshal(request)
 	if err != nil {
 		return body
