@@ -75,6 +75,12 @@ type OpenAIRequest struct {
 	Temperature float64   `json:"temperature"`
 }
 
+type OpenAIEmbeddingRequest struct {
+	Input          any    `json:"input"`
+	Model          string `json:"model"`
+	EncodingFormat string `json:"encoding_format"`
+}
+
 type OpenAIUsageResponse struct {
 	Object string `json:"object"`
 	//DailyCosts []OpenAIUsageDailyCost `json:"daily_costs"`
@@ -113,7 +119,7 @@ func CreateChatCompletions(c *gin.Context) {
 }
 
 func HandleUrl(c *gin.Context, request OpenAIRequest) string {
-	return decoded(patApiUrlPrefix) + patApiCreateCompletions
+	return getPatApiUrlPrefix() + patApiCreateCompletions
 }
 
 func HandleBody(c *gin.Context, request OpenAIRequest, body []byte) []byte {
@@ -377,7 +383,7 @@ func HandlePost(c *gin.Context, url string, data []byte, request OpenAIRequest) 
 }
 
 func GetBillingSubscription(c *gin.Context) {
-	url := decoded(patApiUrlPrefix) + patApiCostUsage
+	url := getPatApiUrlPrefix() + patApiCostUsage
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
 	req.Header.Set(api.AuthorizationHeader, api.GetBasicToken(c))
 	req.Header.Set("Content-Type", "application/json")
@@ -411,7 +417,7 @@ func GetBillingSubscription(c *gin.Context) {
 }
 
 func GetBillingUsage(c *gin.Context) {
-	url := decoded(patApiUrlPrefix) + patApiCostUsage
+	url := getPatApiUrlPrefix() + patApiCostUsage
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
 	req.Header.Set(api.AuthorizationHeader, api.GetBasicToken(c))
 	req.Header.Set("Content-Type", "application/json")
@@ -440,31 +446,56 @@ func GetBillingUsage(c *gin.Context) {
 
 func CreateEmbeddings(c *gin.Context) {
 	reqBody, _ := io.ReadAll(c.Request.Body)
-	var request OpenAIRequest
+	var request OpenAIEmbeddingRequest
 	json.Unmarshal(reqBody, &request)
+	url := getPatApiUrlPrefix() + patApiCreateEmbeddings
+	results := make(map[string]interface{})
+	switch inputs := request.Input.(type) {
+	case string:
+		req, _ := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(reqBody))
+		results = doEmbeddingsRequest(c, req)
+	case []interface{}:
+		// 循环处理messages
+		embeddings := make([]map[string]interface{}, len(inputs))
+		for i, input := range inputs {
+			_request := request
+			_request.Input = input
+			_reqBody, _ := json.Marshal(_request)
+			req, _ := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(_reqBody))
+			result := doEmbeddingsRequest(c, req)
+			embedding := result["data"].([]interface{})[0].(map[string]interface{})
+			embedding["index"] = i
+			embeddings[i] = embedding
+			results = map[string]interface{}{
+				"object": result["object"],
+				"model":  result["model"],
+				"data":   embeddings,
+				"usage":  result["usage"].(map[string]interface{}),
+			}
+		}
+	}
+	c.JSON(http.StatusOK, results)
+}
 
-	url := decoded(patApiUrlPrefix) + patApiCreateEmbeddings
-	req, _ := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(reqBody))
+func doEmbeddingsRequest(c *gin.Context, req *http.Request) map[string]interface{} {
 	req.Header.Set(api.AuthorizationHeader, api.GetBasicToken(c))
 	req.Header.Set("X-Ai-Engine", "openai")
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := api.Client.Do(req)
-
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, api.ReturnMessage(err.Error()))
-		return
+		return nil
 	}
-
 	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusUnauthorized {
 		logger.Error(fmt.Sprintf(api.AccountDeactivatedErrorMessage, c.GetString(c.Request.Header.Get(api.AuthorizationHeader))))
 		responseMap := make(map[string]interface{})
 		json.NewDecoder(resp.Body).Decode(&responseMap)
 		c.AbortWithStatusJSON(resp.StatusCode, responseMap)
-		return
+		return nil
 	}
 	responseMap := make(map[string]interface{})
 	json.NewDecoder(resp.Body).Decode(&responseMap)
 	jsonData := responseMap["data"].(map[string]interface{})
-	c.JSON(http.StatusOK, jsonData)
+	return jsonData
 }

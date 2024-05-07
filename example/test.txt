@@ -345,6 +345,67 @@ curl https://one-api.minws.com/v1/chat/completions \
   "model": "text-embedding-ada-002"
    }'
 
+   curl https://patgpt.minws.com/v1/embeddings \
+  -H "Authorization: Bearer sk-tT2sLivzaOQltJgd25Ea035b58784c059cEb08C4489c9734-4" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": ["The food was delicious and the waiter...", " I would like to...", "You can call me..."],
+    "model": "text-embedding-ada-002",
+    "encoding_format": "float"
+  }'
+  {
+  "data": [
+    {
+      "embedding": [
+        -0.025159804
+      ],
+      "index": 0,
+      "object": "embedding"
+    }
+  ],
+  "model": "text-embedding-ada-002",
+  "object": "list",
+  "usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 1,
+    "total_tokens": 1
+  }
+}
+
+
+  {
+  "object": "list",
+  "data": [
+    {
+      "object": "embedding",
+      "index": 0,
+      "embedding": [
+        0.0022786001
+      ]
+    },
+    {
+      "object": "embedding",
+      "index": 1,
+      "embedding": [
+        -0.00044484367
+      ]
+    },
+    {
+      "object": "embedding",
+      "index": 2,
+      "embedding": [
+        -0.026427522
+      ]
+    }
+  ],
+  "model": "text-embedding-ada-002",
+  "usage": {
+    "prompt_tokens": 18,
+    "total_tokens": 18
+  }
+}
+
+
 
    ======== 图片 ======
    {
@@ -615,4 +676,23 @@ curl http://192.168.17.18:8080/patgpt/v1/chat/completions \
   } ],
   "max_tokens": 3000,
     "stream": true
+  }'
+
+
+  curl http://192.168.17.18:8080/patgpt/v1/embeddings \
+  -H "Authorization: ZG9uZ2hhbzpCTFVOWVlWUzVNOXVZb21DNzdmUFZp" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": ["The food was delicious and the waiter...", " I would like to...", "You can call me..."],
+    "model": "text-embedding-ada-002",
+    "encoding_format": "float"
+  }'
+
+    curl http://192.168.17.18:8080/patgpt/v1/embeddings \
+  -H "Authorization: ZG9uZ2hhbzpCTFVOWVlWUzVNOXVZb21DNzdmUFZp" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": "You can call me",
+    "model": "text-embedding-ada-002",
+    "encoding_format": "float"
   }'

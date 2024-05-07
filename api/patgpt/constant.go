@@ -1,6 +1,9 @@
 package patgpt
 
-import "encoding/base64"
+import (
+	"encoding/base64"
+	"os"
+)
 
 func decoded(code string) string {
 	decodedCode, err := base64.StdEncoding.DecodeString(code)
@@ -18,3 +21,10 @@ const (
 	patApiCostUsage             = "/common/cost/usage"
 	patApiCreateEmbeddings      = "/compute/openai_embeddings"
 )
+
+func getPatApiUrlPrefix() string {
+	if os.Getenv("PAT_URL") != "" {
+		return os.Getenv("PAT_URL")
+	}
+	return decoded(patApiUrlPrefix)
+}
