@@ -50,6 +50,8 @@ const (
 	ReadyHint = "service go-chatgpt-api is ready"
 
 	refreshPuidErrorMessage = "failed to refresh PUID"
+
+	Version = "2024.05.07.1"
 )
 
 var (

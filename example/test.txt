@@ -346,10 +346,10 @@ curl https://one-api.minws.com/v1/chat/completions \
    }'
 
    curl https://patgpt.minws.com/v1/embeddings \
-  -H "Authorization: Bearer sk-tT2sLivzaOQltJgd25Ea035b58784c059cEb08C4489c9734-4" \
+  -H "Authorization: Bearer sk-tT2sLivzaOQltJgd25Ea035b58784c059cEb08C4489c9734" \
   -H "Content-Type: application/json" \
   -d '{
-    "input": ["The food was delicious and the waiter...", " I would like to...", "You can call me..."],
+    "input": ["Apple", "Banana", "Man"],
     "model": "text-embedding-ada-002",
     "encoding_format": "float"
   }'
@@ -683,7 +683,7 @@ curl http://192.168.17.18:8080/patgpt/v1/chat/completions \
   -H "Authorization: ZG9uZ2hhbzpCTFVOWVlWUzVNOXVZb21DNzdmUFZp" \
   -H "Content-Type: application/json" \
   -d '{
-    "input": ["The food was delicious and the waiter...", " I would like to...", "You can call me..."],
+    "input": ["Apple", "Banana", "Man"],
     "model": "text-embedding-ada-002",
     "encoding_format": "float"
   }'
@@ -692,7 +692,7 @@ curl http://192.168.17.18:8080/patgpt/v1/chat/completions \
   -H "Authorization: ZG9uZ2hhbzpCTFVOWVlWUzVNOXVZb21DNzdmUFZp" \
   -H "Content-Type: application/json" \
   -d '{
-    "input": "You can call me",
+    "input": "Apple",
     "model": "text-embedding-ada-002",
     "encoding_format": "float"
   }'

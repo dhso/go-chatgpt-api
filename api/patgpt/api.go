@@ -8,6 +8,7 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	http "github.com/bogdanfinn/fhttp"
@@ -457,22 +458,31 @@ func CreateEmbeddings(c *gin.Context) {
 	case []interface{}:
 		// 循环处理messages
 		embeddings := make([]map[string]interface{}, len(inputs))
+		var wg sync.WaitGroup
+		mu := sync.Mutex{}
 		for i, input := range inputs {
-			_request := request
-			_request.Input = input
-			_reqBody, _ := json.Marshal(_request)
-			req, _ := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(_reqBody))
-			result := doEmbeddingsRequest(c, req)
-			embedding := result["data"].([]interface{})[0].(map[string]interface{})
-			embedding["index"] = i
-			embeddings[i] = embedding
-			results = map[string]interface{}{
-				"object": result["object"],
-				"model":  result["model"],
-				"data":   embeddings,
-				"usage":  result["usage"].(map[string]interface{}),
-			}
+			wg.Add(1)
+			go func(_i int, _input interface{}) {
+				defer wg.Done()
+				_request := request
+				_request.Input = _input
+				_reqBody, _ := json.Marshal(_request)
+				req, _ := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(_reqBody))
+				result := doEmbeddingsRequest(c, req)
+				mu.Lock()
+				embedding := result["data"].([]interface{})[0].(map[string]interface{})
+				embedding["index"] = _i
+				embeddings[_i] = embedding
+				results = map[string]interface{}{
+					"object": result["object"],
+					"model":  result["model"],
+					"data":   embeddings,
+					"usage":  result["usage"].(map[string]interface{}),
+				}
+				mu.Unlock()
+			}(i, input)
 		}
+		wg.Wait()
 	}
 	c.JSON(http.StatusOK, results)
 }
