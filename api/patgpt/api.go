@@ -382,6 +382,8 @@ func HandlePost(c *gin.Context, url string, data []byte, request OpenAIRequest) 
 		req.Header.Set("X-Ai-Engine", "google")
 	} else if strings.HasPrefix(request.Model, "patent-") {
 		req.Header.Set("X-Ai-Engine", "patsnap")
+	} else if strings.HasPrefix(request.Model, "deepseek-") {
+		req.Header.Set("X-Ai-Engine", "deepseek")
 	}
 	if request.Stream {
 		req.Header.Set("Accept", "text/event-stream")
