@@ -31,9 +31,12 @@ type StreamingChoice struct {
 }
 
 type Message struct {
-	Role      string                   `json:"role"`
-	Content   any                      `json:"content"`
-	ToolCalls []map[string]interface{} `json:"tool_calls"`
+	Role         string        `json:"role"`
+	Content      any           `json:"content"`
+	ToolCalls    []interface{} `json:"tool_calls"`
+	Name         string        `json:"name"`
+	FunctionCall interface{}   `json:"function_call"`
+	ToolCallId   string        `json:"tool_call_id"`
 }
 
 type MessageContent struct {
@@ -68,12 +71,14 @@ type OpenAISubscriptionResponse struct {
 }
 
 type OpenAIRequest struct {
-	Stream      bool      `json:"stream"`
-	Model       string    `json:"model"`
-	MaxToken    int       `json:"max_tokens"`
-	Message     string    `json:"message"`
-	Messages    []Message `json:"messages"`
-	Temperature float64   `json:"temperature"`
+	Stream      bool          `json:"stream"`
+	Model       string        `json:"model"`
+	MaxToken    int           `json:"max_tokens"`
+	Message     string        `json:"message"`
+	Messages    []Message     `json:"messages"`
+	Temperature float64       `json:"temperature"`
+	Tools       []interface{} `json:"tools"`
+	ToolChoice  any           `json:"tool_choice"`
 }
 
 type OpenAIEmbeddingRequest struct {
@@ -314,11 +319,12 @@ func HandleCompletionsResponse(c *gin.Context, resp *http.Response) {
 		})
 		return
 	}
-	jsonData := responseMap["data"].(map[string]interface{})
-	message := jsonData["message"]
-	if message == nil {
-		message = ""
+	if responseMap["data"] == nil && responseMap["msg"] != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, api.ReturnMessage(responseMap["msg"].(string)))
+		return
 	}
+
+	jsonData := responseMap["data"].(map[string]interface{})
 	finishReason := jsonData["finish_reason"]
 	if finishReason == nil {
 		finishReason = ""
@@ -334,12 +340,19 @@ func HandleCompletionsResponse(c *gin.Context, resp *http.Response) {
 	var choices []Choice
 	choices = append(choices, Choice{
 		Message: Message{
-			Role:    "assistant",
-			Content: message.(string),
+			Role: "assistant",
 		},
 		FinishReason: finishReason.(string),
 		Index:        0,
 	})
+	message := jsonData["message"]
+	if message != nil {
+		choices[0].Message.Content = message.(string)
+	}
+	toolCalls := jsonData["tool_calls"]
+	if toolCalls != nil {
+		choices[0].Message.ToolCalls = toolCalls.([]interface{})
+	}
 	model := jsonData["model"].(string)
 	usage := jsonData["usage"].(map[string]interface{})
 	var ts = time.Now().Unix()

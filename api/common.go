@@ -51,7 +51,7 @@ const (
 
 	refreshPuidErrorMessage = "failed to refresh PUID"
 
-	Version = "2024.05.07.1"
+	Version = "2024.05.13.2"
 )
 
 var (
