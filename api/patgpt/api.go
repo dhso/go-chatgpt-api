@@ -371,7 +371,7 @@ func HandlePost(c *gin.Context, url string, data []byte, request OpenAIRequest) 
 	req, _ := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(data))
 	req.Header.Set(api.AuthorizationHeader, api.GetBasicToken(c))
 	if strings.HasPrefix(request.Model, "gpt-") {
-		if request.Model == "gpt-4-turbo" {
+		if request.Model == "gpt-4-turbo" || request.Model == "gpt-4o" {
 			req.Header.Set("X-Ai-Engine", "openai")
 		} else {
 			req.Header.Set("X-Ai-Engine", "azure")
