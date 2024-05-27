@@ -13,6 +13,7 @@ import (
 	"github.com/dhso/go-chatgpt-api/api/copilot"
 	"github.com/dhso/go-chatgpt-api/api/imitate"
 	"github.com/dhso/go-chatgpt-api/api/patgpt"
+	"github.com/dhso/go-chatgpt-api/api/patgpt_new"
 	"github.com/dhso/go-chatgpt-api/api/platform"
 	_ "github.com/dhso/go-chatgpt-api/env"
 	"github.com/dhso/go-chatgpt-api/middleware"
@@ -34,6 +35,7 @@ func main() {
 	setupPlatformAPIs(router)
 	setupPandoraAPIs(router)
 	setupImitateAPIs(router)
+	setupPatgptNewAPIs(router)
 	setupPatgptAPIs(router)
 	setupCopilotAPIs(router)
 	router.NoRoute(api.Proxy)
@@ -108,6 +110,20 @@ func setupPatgptAPIs(router *gin.Engine) {
 			apiGroup.POST("/embeddings", patgpt.CreateEmbeddings)
 			apiGroup.GET("/dashboard/billing/subscription", patgpt.GetBillingSubscription)
 			apiGroup.GET("/dashboard/billing/usage", patgpt.GetBillingUsage)
+		}
+	}
+}
+
+func setupPatgptNewAPIs(router *gin.Engine) {
+	patgptNewGroup := router.Group("/patgpt_new")
+	{
+		apiGroup := patgptNewGroup.Group("/v1")
+		{
+			apiGroup.POST("/chat/completions", patgpt_new.CreateChatCompletions)
+			apiGroup.POST("/completions", patgpt_new.CreateCompletions)
+			apiGroup.POST("/embeddings", patgpt_new.CreateEmbeddings)
+			apiGroup.GET("/dashboard/billing/subscription", patgpt_new.GetBillingSubscription)
+			apiGroup.GET("/dashboard/billing/usage", patgpt_new.GetBillingUsage)
 		}
 	}
 }

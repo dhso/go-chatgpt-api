@@ -51,7 +51,7 @@ const (
 
 	refreshPuidErrorMessage = "failed to refresh PUID"
 
-	Version = "2024.05.15.1"
+	Version = "2024.05.27.1"
 )
 
 var (
@@ -173,6 +173,22 @@ func GetAccessToken(c *gin.Context) string {
 
 func GetArkoseToken() (string, error) {
 	return funcaptcha.GetOpenAIToken(PUID, ProxyUrl)
+}
+
+func GetBearerRemovedToken(c *gin.Context) string {
+	accessToken := c.GetString(AuthorizationHeader)
+	if strings.HasPrefix(accessToken, "Bearer") {
+		accessToken = strings.Replace(accessToken, "Bearer", "", 1)
+	}
+	return strings.TrimSpace(accessToken)
+}
+
+func GetBearerToken(c *gin.Context) string {
+	accessToken := c.GetString(AuthorizationHeader)
+	if !strings.HasPrefix(accessToken, "Bearer") {
+		return "Bearer " + accessToken
+	}
+	return accessToken
 }
 
 func GetBasicToken(c *gin.Context) string {

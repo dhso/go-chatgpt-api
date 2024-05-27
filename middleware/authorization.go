@@ -27,13 +27,15 @@ type AccessToken struct {
 	HTTPSAPIOpenaiComAuth struct {
 		UserID string `json:"user_id"`
 	} `json:"https://api.openai.com/auth"`
-	Iss   string   `json:"iss"`
-	Sub   string   `json:"sub"`
-	Aud   []string `json:"aud"`
-	Iat   int      `json:"iat"`
-	Exp   int      `json:"exp"`
-	Azp   string   `json:"azp"`
-	Scope string   `json:"scope"`
+	Iss    string   `json:"iss"`
+	Sub    string   `json:"sub"`
+	Aud    []string `json:"aud"`
+	Iat    int      `json:"iat"`
+	Exp    int      `json:"exp"`
+	Azp    string   `json:"azp"`
+	Scope  string   `json:"scope"`
+	Object string   `json:"object"`
+	Header string   `json:"header"`
 }
 
 func Authorization() gin.HandlerFunc {
@@ -77,6 +79,9 @@ func isExpired(c *gin.Context) bool {
 		rawDecodedText, _ := base64.RawStdEncoding.DecodeString(split[1])
 		var accessToken AccessToken
 		json.Unmarshal(rawDecodedText, &accessToken)
+		if accessToken.Header == "X-Credential-Username" {
+			return false
+		}
 
 		c.Set(api.EmailKey, accessToken.HTTPSAPIOpenaiComProfile.Email)
 

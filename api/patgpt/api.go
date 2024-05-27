@@ -3,6 +3,8 @@ package patgpt
 import (
 	"bufio"
 	"bytes"
+	"encoding/base64"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -469,7 +471,7 @@ func CreateEmbeddings(c *gin.Context) {
 	switch inputs := request.Input.(type) {
 	case string:
 		req, _ := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(reqBody))
-		results = doEmbeddingsRequest(c, req)
+		results = doEmbeddingsRequest(c, req, request)
 	case []interface{}:
 		// 循环处理messages
 		embeddings := make([]map[string]interface{}, len(inputs))
@@ -483,7 +485,7 @@ func CreateEmbeddings(c *gin.Context) {
 				_request.Input = _input
 				_reqBody, _ := json.Marshal(_request)
 				req, _ := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(_reqBody))
-				result := doEmbeddingsRequest(c, req)
+				result := doEmbeddingsRequest(c, req, request)
 				mu.Lock()
 				embedding := result["data"].([]interface{})[0].(map[string]interface{})
 				embedding["index"] = _i
@@ -502,7 +504,7 @@ func CreateEmbeddings(c *gin.Context) {
 	c.JSON(http.StatusOK, results)
 }
 
-func doEmbeddingsRequest(c *gin.Context, req *http.Request) map[string]interface{} {
+func doEmbeddingsRequest(c *gin.Context, req *http.Request, request OpenAIEmbeddingRequest) map[string]interface{} {
 	req.Header.Set(api.AuthorizationHeader, api.GetBasicToken(c))
 	req.Header.Set("X-Ai-Engine", "openai")
 	req.Header.Set("Content-Type", "application/json")
@@ -522,5 +524,22 @@ func doEmbeddingsRequest(c *gin.Context, req *http.Request) map[string]interface
 	responseMap := make(map[string]interface{})
 	json.NewDecoder(resp.Body).Decode(&responseMap)
 	jsonData := responseMap["data"].(map[string]interface{})
+	if request.EncodingFormat == "base64" {
+		for jd_idx, jd := range jsonData["data"].([]interface{}) {
+			// 将浮点数列表转换为字节数组
+			buf := new(bytes.Buffer)
+			for _, f := range jd.(map[string]interface{})["embedding"].([]interface{}) {
+				err := binary.Write(buf, binary.LittleEndian, float32(f.(float64)))
+				if err != nil {
+					fmt.Println("binary.Write failed:", err)
+				}
+			}
+			byteArray := buf.Bytes()
+			// 将字节数组转换为Base64字符串
+			base64Str := base64.StdEncoding.EncodeToString(byteArray)
+			jsonData["data"].([]interface{})[jd_idx].(map[string]interface{})["embedding"] = base64Str
+		}
+		return jsonData
+	}
 	return jsonData
 }
