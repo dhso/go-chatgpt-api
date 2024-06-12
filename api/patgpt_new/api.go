@@ -29,12 +29,9 @@ type OpenAIRequest struct {
 }
 
 type Message struct {
-	Role         string        `json:"role"`
-	Content      any           `json:"content"`
-	ToolCalls    []interface{} `json:"tool_calls"`
-	Name         string        `json:"name"`
-	FunctionCall interface{}   `json:"function_call"`
-	ToolCallId   string        `json:"tool_call_id"`
+	Role      string        `json:"role"`
+	Content   any           `json:"content"`
+	ToolCalls []interface{} `json:"tool_calls"`
 }
 
 type OpenAIEmbeddingRequest struct {
@@ -68,18 +65,19 @@ func CreateChatCompletions(c *gin.Context) {
 	}
 
 	defer resp.Body.Close()
-	switch resp.StatusCode {
-	case http.StatusOK:
+	if resp.StatusCode != http.StatusOK {
+		switch resp.StatusCode {
+		case http.StatusUnauthorized:
+			logger.Error(fmt.Sprintf(api.AccountDeactivatedErrorMessage, c.GetString(c.Request.Header.Get(api.AuthorizationHeader))))
+		case http.StatusForbidden:
+			logger.Error(fmt.Sprintf(api.AccountForbiddenErrorMessage, c.GetString(c.Request.Header.Get(api.AuthorizationHeader))))
+		}
+		responseMap := make(map[string]interface{})
+		json.NewDecoder(resp.Body).Decode(&responseMap)
+		c.AbortWithStatusJSON(resp.StatusCode, responseMap)
+	} else {
 		HandleResponse(c, resp, request)
-		return
-	case http.StatusUnauthorized:
-		logger.Error(fmt.Sprintf(api.AccountDeactivatedErrorMessage, c.GetString(c.Request.Header.Get(api.AuthorizationHeader))))
-	case http.StatusForbidden:
-		logger.Error(fmt.Sprintf(api.AccountForbiddenErrorMessage, c.GetString(c.Request.Header.Get(api.AuthorizationHeader))))
 	}
-	responseMap := make(map[string]interface{})
-	json.NewDecoder(resp.Body).Decode(&responseMap)
-	c.AbortWithStatusJSON(resp.StatusCode, responseMap)
 }
 
 func HandleBody(c *gin.Context, request OpenAIRequest, body []byte) []byte {
@@ -173,7 +171,9 @@ func handlePost(c *gin.Context, url string, data []byte, request OpenAIRequest) 
 
 func HandleResponse(c *gin.Context, resp *http.Response, request OpenAIRequest) {
 	if request.Stream {
-		c.Writer.Header().Set("Content-Type", "text/event-stream; charset=utf-8")
+		c.Writer.Header().Set("Content-Type", "text/event-stream")
+		c.Writer.Header().Set("Cache-Control", "no-cache")
+		c.Writer.Flush()
 		reader := bufio.NewReader(resp.Body)
 		for {
 			if c.Request.Context().Err() != nil {
@@ -187,11 +187,20 @@ func HandleResponse(c *gin.Context, resp *http.Response, request OpenAIRequest) 
 
 			line = strings.TrimSpace(line)
 
-			if strings.HasPrefix(line, "data:") {
-				line = "data: " + strings.TrimPrefix(line, "data:")
+			if strings.HasPrefix(line, "event:") || line == "" {
+				continue
 			}
 
-			c.Writer.Write([]byte(line + "\n"))
+			if strings.HasPrefix(line, "data:") {
+				line_without_data := strings.TrimSpace(strings.TrimPrefix(line, "data:"))
+				if line_without_data == "finish" {
+					line = "data: [DONE]"
+				} else {
+					line = "data: " + line_without_data
+				}
+			}
+
+			c.Writer.Write([]byte(line + "\n\n"))
 			c.Writer.Flush()
 		}
 	} else {

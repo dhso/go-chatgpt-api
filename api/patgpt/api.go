@@ -33,12 +33,9 @@ type StreamingChoice struct {
 }
 
 type Message struct {
-	Role         string        `json:"role"`
-	Content      any           `json:"content"`
-	ToolCalls    []interface{} `json:"tool_calls"`
-	Name         string        `json:"name"`
-	FunctionCall interface{}   `json:"function_call"`
-	ToolCallId   string        `json:"tool_call_id"`
+	Role      string        `json:"role"`
+	Content   any           `json:"content"`
+	ToolCalls []interface{} `json:"tool_calls"`
 }
 
 type MessageContent struct {
@@ -112,18 +109,19 @@ func CreateChatCompletions(c *gin.Context) {
 	}
 
 	defer resp.Body.Close()
-	switch resp.StatusCode {
-	case http.StatusOK:
+	if resp.StatusCode != http.StatusOK {
+		switch resp.StatusCode {
+		case http.StatusUnauthorized:
+			logger.Error(fmt.Sprintf(api.AccountDeactivatedErrorMessage, c.GetString(c.Request.Header.Get(api.AuthorizationHeader))))
+		case http.StatusForbidden:
+			logger.Error(fmt.Sprintf(api.AccountForbiddenErrorMessage, c.GetString(c.Request.Header.Get(api.AuthorizationHeader))))
+		}
+		responseMap := make(map[string]interface{})
+		json.NewDecoder(resp.Body).Decode(&responseMap)
+		c.AbortWithStatusJSON(resp.StatusCode, responseMap)
+	} else {
 		HandleResponse(c, resp, request)
-		return
-	case http.StatusUnauthorized:
-		logger.Error(fmt.Sprintf(api.AccountDeactivatedErrorMessage, c.GetString(c.Request.Header.Get(api.AuthorizationHeader))))
-	case http.StatusForbidden:
-		logger.Error(fmt.Sprintf(api.AccountForbiddenErrorMessage, c.GetString(c.Request.Header.Get(api.AuthorizationHeader))))
 	}
-	responseMap := make(map[string]interface{})
-	json.NewDecoder(resp.Body).Decode(&responseMap)
-	c.AbortWithStatusJSON(resp.StatusCode, responseMap)
 }
 
 func HandleUrl(c *gin.Context, request OpenAIRequest) string {
@@ -197,84 +195,10 @@ func HandleResponse(c *gin.Context, resp *http.Response, request OpenAIRequest) 
 	}
 }
 
-func HandleClaudeResponseWithStream(c *gin.Context, resp *http.Response) {
-	c.Writer.Header().Set("Content-Type", "text/event-stream; charset=utf-8")
-
-	reader := bufio.NewReader(resp.Body)
-	for {
-		if c.Request.Context().Err() != nil {
-			break
-		}
-
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			break
-		}
-
-		line = strings.TrimSpace(line)
-
-		if strings.HasPrefix(line, "event:") || line == "" {
-			continue
-		}
-
-		if strings.HasPrefix(line, "data:") {
-			line = "data: " + strings.TrimPrefix(line, "data:")
-		}
-
-		var jsonLine map[string]interface{}
-		err = json.Unmarshal([]byte(strings.TrimPrefix(line, "data: ")), &jsonLine)
-		if err == nil {
-			model := jsonLine["model"].(string)
-			if model == "" {
-				continue
-			}
-			var delta Message
-			var finishReason string
-			if jsonLine["message"] != nil {
-				content := jsonLine["message"].(string)
-				delta = Message{
-					Role:    "assistant",
-					Content: content,
-				}
-			} else {
-				finishReason = "stop"
-			}
-
-			var choices []StreamingChoice
-			choices = append(choices, StreamingChoice{
-				Delta:        delta,
-				FinishReason: finishReason,
-				Index:        0,
-			})
-			usage := map[string]interface{}{}
-			var ts = time.Now().Unix()
-			id := "chatcmpl-" + fmt.Sprint(ts)
-			strLine, err := json.Marshal(map[string]interface{}{
-				"model":   model,
-				"choices": choices,
-				"usage":   usage,
-				"id":      id,
-				"object":  "chat.completion",
-				"created": ts,
-			})
-			if err != nil {
-				break
-			}
-
-			line = "data: " + string(strLine)
-		}
-
-		if line == "data: finish" {
-			line = "data: [DONE]"
-		}
-
-		c.Writer.Write([]byte(line + "\n\n"))
-		c.Writer.Flush()
-	}
-}
-
 func HandleCompletionsResponseWithStream(c *gin.Context, resp *http.Response) {
-	c.Writer.Header().Set("Content-Type", "text/event-stream; charset=utf-8")
+	c.Writer.Header().Set("Content-Type", "text/event-stream")
+	c.Writer.Header().Set("Cache-Control", "no-cache")
+	c.Writer.Flush()
 
 	reader := bufio.NewReader(resp.Body)
 	for {
@@ -293,11 +217,27 @@ func HandleCompletionsResponseWithStream(c *gin.Context, resp *http.Response) {
 			continue
 		}
 		if strings.HasPrefix(line, "data:") {
-			line = "data: " + strings.TrimPrefix(line, "data:")
-		}
-
-		if line == "data: finish" {
-			line = "data: [DONE]"
+			line_without_data := strings.TrimSpace(strings.TrimPrefix(line, "data:"))
+			if line_without_data == "finish" {
+				line = "data: [DONE]"
+			} else {
+				var jsonLine map[string]interface{}
+				err = json.Unmarshal([]byte(line_without_data), &jsonLine)
+				if err == nil {
+					choices := jsonLine["choices"].([]interface{})
+					delta := choices[0].(map[string]interface{})["delta"].(map[string]interface{})
+					if delta["role"] == "assistant" && delta["tool_calls"] != nil && delta["content"] == nil {
+						choices[0].(map[string]interface{})["delta"].(map[string]interface{})["content"] = nil
+						jsonLine["choices"] = choices
+					}
+				}
+				lineBytes, err := json.Marshal(jsonLine)
+				if err != nil {
+					continue
+				}
+				line = "data: " + string(lineBytes)
+				// line = "data: " + line_without_data
+			}
 		}
 
 		c.Writer.Write([]byte(line + "\n\n"))
