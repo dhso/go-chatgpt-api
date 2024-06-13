@@ -18,20 +18,38 @@ import (
 )
 
 type OpenAIRequest struct {
-	Stream      bool          `json:"stream"`
-	Model       string        `json:"model"`
-	MaxToken    int           `json:"max_tokens"`
-	Message     string        `json:"message"`
-	Messages    []Message     `json:"messages"`
-	Temperature float64       `json:"temperature"`
-	Tools       []interface{} `json:"tools"`
-	ToolChoice  any           `json:"tool_choice"`
+	Stream            bool      `json:"stream"`
+	Model             string    `json:"model"`
+	MaxTokens         int       `json:"max_tokens"`
+	Message           string    `json:"message"`
+	Messages          []Message `json:"messages"`
+	Temperature       float64   `json:"temperature"`
+	Tools             []any     `json:"tools"`
+	ToolChoice        any       `json:"tool_choice"`
+	FrequencyPenalty  float64   `json:"frequency_penalty"`
+	LogitBias         any       `json:"logit_bias"`
+	Logprobs          bool      `json:"logprobs"`
+	TopLogprobs       int       `json:"top_logprobs"`
+	N                 int       `json:"n"`
+	PresencePenalty   float64   `json:"presence_penalty"`
+	ResponseFormat    any       `json:"response_format"`
+	Seed              int       `json:"seed"`
+	Stop              any       `json:"stop"`
+	StreamOptions     any       `json:"stream_options"`
+	TopP              float64   `json:"top_p"`
+	ParallelToolCalls bool      `json:"parallel_tool_calls"`
+	User              string    `json:"user"`
+	FunctionCall      any       `json:"function_call"`
+	Functions         []any     `json:"functions"`
 }
 
 type Message struct {
-	Role      string        `json:"role"`
-	Content   any           `json:"content"`
-	ToolCalls []interface{} `json:"tool_calls"`
+	Role         string        `json:"role"`
+	Content      any           `json:"content"`
+	ToolCalls    []interface{} `json:"tool_calls"`
+	Name         string        `json:"name"`
+	FunctionCall any           `json:"function_call"`
+	ToolCallId   string        `json:"tool_call_id"`
 }
 
 type OpenAIEmbeddingRequest struct {

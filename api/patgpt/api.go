@@ -33,9 +33,12 @@ type StreamingChoice struct {
 }
 
 type Message struct {
-	Role      string        `json:"role"`
-	Content   any           `json:"content"`
-	ToolCalls []interface{} `json:"tool_calls"`
+	Role         string        `json:"role"`
+	Content      any           `json:"content"`
+	ToolCalls    []interface{} `json:"tool_calls"`
+	Name         string        `json:"name"`
+	FunctionCall any           `json:"function_call"`
+	ToolCallId   string        `json:"tool_call_id"`
 }
 
 type MessageContent struct {
@@ -70,14 +73,29 @@ type OpenAISubscriptionResponse struct {
 }
 
 type OpenAIRequest struct {
-	Stream      bool          `json:"stream"`
-	Model       string        `json:"model"`
-	MaxToken    int           `json:"max_tokens"`
-	Message     string        `json:"message"`
-	Messages    []Message     `json:"messages"`
-	Temperature float64       `json:"temperature"`
-	Tools       []interface{} `json:"tools"`
-	ToolChoice  any           `json:"tool_choice"`
+	Stream            bool      `json:"stream"`
+	Model             string    `json:"model"`
+	MaxTokens         int       `json:"max_tokens"`
+	Message           string    `json:"message"`
+	Messages          []Message `json:"messages"`
+	Temperature       float64   `json:"temperature"`
+	Tools             []any     `json:"tools"`
+	ToolChoice        any       `json:"tool_choice"`
+	FrequencyPenalty  float64   `json:"frequency_penalty"`
+	LogitBias         any       `json:"logit_bias"`
+	Logprobs          bool      `json:"logprobs"`
+	TopLogprobs       int       `json:"top_logprobs"`
+	N                 int       `json:"n"`
+	PresencePenalty   float64   `json:"presence_penalty"`
+	ResponseFormat    any       `json:"response_format"`
+	Seed              int       `json:"seed"`
+	Stop              any       `json:"stop"`
+	StreamOptions     any       `json:"stream_options"`
+	TopP              float64   `json:"top_p"`
+	ParallelToolCalls bool      `json:"parallel_tool_calls"`
+	User              string    `json:"user"`
+	FunctionCall      any       `json:"function_call"`
+	Functions         []any     `json:"functions"`
 }
 
 type OpenAIEmbeddingRequest struct {
@@ -226,7 +244,7 @@ func HandleCompletionsResponseWithStream(c *gin.Context, resp *http.Response) {
 				if err == nil {
 					choices := jsonLine["choices"].([]interface{})
 					delta := choices[0].(map[string]interface{})["delta"].(map[string]interface{})
-					if delta["role"] == "assistant" && delta["tool_calls"] != nil && delta["content"] == nil {
+					if delta["role"] == "assistant" && (delta["tool_calls"] != nil || delta["function_call"] != nil) && delta["content"] == nil {
 						choices[0].(map[string]interface{})["delta"].(map[string]interface{})["content"] = nil
 						jsonLine["choices"] = choices
 					}
@@ -293,19 +311,30 @@ func HandleCompletionsResponse(c *gin.Context, resp *http.Response) {
 	}
 	toolCalls := jsonData["tool_calls"]
 	if toolCalls != nil {
+		// choices[0].Message.Role = "tool"
 		choices[0].Message.ToolCalls = toolCalls.([]interface{})
+	}
+	functionCall := jsonData["function_call"]
+	if functionCall != nil {
+		// choices[0].Message.Role = "function"
+		choices[0].Message.FunctionCall = functionCall
 	}
 	model := jsonData["model"].(string)
 	usage := jsonData["usage"].(map[string]interface{})
+	systemFingerprint := ""
+	if jsonData["system_fingerprint"] != nil {
+		systemFingerprint = jsonData["system_fingerprint"].(string)
+	}
 	var ts = time.Now().Unix()
 	id := "chatcmpl-" + fmt.Sprint(ts)
 	c.JSON(http.StatusOK, gin.H{
-		"model":   model,
-		"choices": choices,
-		"usage":   usage,
-		"id":      id,
-		"object":  "chat.completion",
-		"created": ts,
+		"model":              model,
+		"choices":            choices,
+		"usage":              usage,
+		"id":                 id,
+		"object":             "chat.completion",
+		"system_fingerprint": systemFingerprint,
+		"created":            ts,
 	})
 }
 
