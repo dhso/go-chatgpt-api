@@ -456,8 +456,11 @@ func CreateEmbeddings(c *gin.Context) {
 				req, _ := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(_reqBody))
 				result := doEmbeddingsRequest(c, req, request)
 				mu.Lock()
-				embedding := result["data"].([]interface{})[0].(map[string]interface{})
-				embedding["index"] = _i
+				embedding := map[string]interface{}{}
+				if result != nil {
+					embedding = result["data"].([]interface{})[0].(map[string]interface{})
+					embedding["index"] = _i
+				}
 				embeddings[_i] = embedding
 				results = map[string]interface{}{
 					"object": result["object"],
@@ -483,8 +486,13 @@ func doEmbeddingsRequest(c *gin.Context, req *http.Request, request OpenAIEmbedd
 		return nil
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusUnauthorized {
-		logger.Error(fmt.Sprintf(api.AccountDeactivatedErrorMessage, c.GetString(c.Request.Header.Get(api.AuthorizationHeader))))
+	if resp.StatusCode != http.StatusOK {
+		switch resp.StatusCode {
+		case http.StatusUnauthorized:
+			logger.Error(fmt.Sprintf(api.AccountDeactivatedErrorMessage, c.GetString(c.Request.Header.Get(api.AuthorizationHeader))))
+		case http.StatusForbidden:
+			logger.Error(fmt.Sprintf(api.AccountForbiddenErrorMessage, c.GetString(c.Request.Header.Get(api.AuthorizationHeader))))
+		}
 		responseMap := make(map[string]interface{})
 		json.NewDecoder(resp.Body).Decode(&responseMap)
 		c.AbortWithStatusJSON(resp.StatusCode, responseMap)
@@ -492,6 +500,9 @@ func doEmbeddingsRequest(c *gin.Context, req *http.Request, request OpenAIEmbedd
 	}
 	responseMap := make(map[string]interface{})
 	json.NewDecoder(resp.Body).Decode(&responseMap)
+	if responseMap["data"] == nil {
+		return nil
+	}
 	jsonData := responseMap["data"].(map[string]interface{})
 	if request.EncodingFormat == "base64" {
 		for jd_idx, jd := range jsonData["data"].([]interface{}) {
