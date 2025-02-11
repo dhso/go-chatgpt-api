@@ -278,3 +278,18 @@ func GetImageBase64Str(url string) string {
 	base64Str = "data:" + format + ";base64," + base64Str
 	return base64Str
 }
+
+func ModelMappping(model string) string {
+	if model == "gpt-4o" || model == "gpt-3.5-turbo" || model == "gpt-4" {
+		return "azure"
+	} else if strings.HasPrefix(model, "claude-") {
+		return "anthropic"
+	} else if strings.HasPrefix(model, "gemini-") {
+		return "google"
+	} else if strings.HasPrefix(model, "patent-") {
+		return "patsnap"
+	} else if strings.HasPrefix(model, "deepseek-") {
+		return "deepseek"
+	}
+	return "openai"
+}

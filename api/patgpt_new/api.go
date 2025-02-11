@@ -160,21 +160,7 @@ func HandleBody(c *gin.Context, request OpenAIRequest, body []byte) []byte {
 func handlePost(c *gin.Context, url string, data []byte, request OpenAIRequest) (*http.Response, error) {
 	req, _ := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(data))
 	req.Header.Set(api.AuthorizationHeader, api.GetBearerToken(c))
-	if strings.HasPrefix(request.Model, "gpt-") {
-		if request.Model == "gpt-4-turbo" || request.Model == "gpt-4o" {
-			req.Header.Set("X-Ai-Engine", "openai")
-		} else {
-			req.Header.Set("X-Ai-Engine", "azure")
-		}
-	} else if strings.HasPrefix(request.Model, "claude-") {
-		req.Header.Set("X-Ai-Engine", "anthropic")
-	} else if strings.HasPrefix(request.Model, "gemini-") {
-		req.Header.Set("X-Ai-Engine", "google")
-	} else if strings.HasPrefix(request.Model, "patent-") {
-		req.Header.Set("X-Ai-Engine", "patsnap")
-	} else if strings.HasPrefix(request.Model, "deepseek-") {
-		req.Header.Set("X-Ai-Engine", "deepseek")
-	}
+	req.Header.Set("X-Ai-Engine", api.ModelMappping(request.Model))
 	if request.Stream {
 		req.Header.Set("Accept", "text/event-stream")
 	}
