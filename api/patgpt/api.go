@@ -342,11 +342,23 @@ func HandlePost(c *gin.Context, url string, data []byte, request OpenAIRequest) 
 	req, _ := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(data))
 	req.Header.Set(api.AuthorizationHeader, api.GetBasicToken(c))
 	req.Header.Set("X-Ai-Engine", api.ModelMappping(request.Model))
+	req.Header.Set("Content-Type", "application/json")
 	if request.Stream {
 		req.Header.Set("Accept", "text/event-stream")
+		req.Header.Set("Content-Type", "text/event-stream")
 	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := api.Client.Do(req)
+	var modifiedReq *http.Request = req
+	if strings.HasPrefix(request.Model, "deepseek-") {
+		var modifiedRequest OpenAIRequest
+		json.Unmarshal(data, &modifiedRequest)
+		modifiedRequest.Temperature = 1
+		modifiedRequest.TopP = 1
+		var modifiedData []byte
+		modifiedData, _ = json.Marshal(modifiedRequest)
+		modifiedReq, _ = http.NewRequest(http.MethodPost, url, bytes.NewBuffer(modifiedData))
+		modifiedReq.Header = req.Header.Clone()
+	}
+	resp, err := api.Client.Do(modifiedReq)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, api.ReturnMessage(err.Error()))
 		return nil, err
