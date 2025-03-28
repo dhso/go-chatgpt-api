@@ -286,7 +286,7 @@ func ModelMappping(model string) string {
 		return "anthropic"
 	} else if strings.HasPrefix(model, "gemini-") {
 		return "google"
-	} else if strings.HasPrefix(model, "patent-") {
+	} else if strings.HasPrefix(model, "patent-") || strings.HasPrefix(model, "seekgpt-") {
 		return "patsnap"
 	} else if strings.HasPrefix(model, "deepseek-") {
 		return "deepseek"

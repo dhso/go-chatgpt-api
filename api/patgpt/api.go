@@ -348,11 +348,14 @@ func HandlePost(c *gin.Context, url string, data []byte, request OpenAIRequest) 
 		req.Header.Set("Content-Type", "text/event-stream")
 	}
 	var modifiedReq *http.Request = req
-	if strings.HasPrefix(request.Model, "deepseek-") {
+	if strings.HasPrefix(request.Model, "deepseek-") || strings.HasPrefix(request.Model, "seekgpt-") {
 		var modifiedRequest OpenAIRequest
 		json.Unmarshal(data, &modifiedRequest)
 		modifiedRequest.Temperature = 1
 		modifiedRequest.TopP = 1
+		if strings.HasPrefix(request.Model, "seekgpt-") {
+			modifiedRequest.TopP = 0.75
+		}
 		var modifiedData []byte
 		modifiedData, _ = json.Marshal(modifiedRequest)
 		modifiedReq, _ = http.NewRequest(http.MethodPost, url, bytes.NewBuffer(modifiedData))
